@@ -1,0 +1,34 @@
+# Build
+build/
+cmake-build-*/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled
+*.o
+*.so
+*.so.*
+*.a
+*.d
+
+# RodeX
+RodeX_Settings/
+
+# Dependencies
+external/
+
+# Plans 
+plans/
+
+# Roo config
+.roo/

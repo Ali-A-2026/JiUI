@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+        build_type: [Debug, Release]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential ${{ matrix.compiler }} libx11-dev libwayland-dev libegl-dev libvulkan-dev
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_C_COMPILER=${{ matrix.compiler }} -DJIUI_ENABLE_X11=ON -DJIUI_ENABLE_WAYLAND=ON -DJIUI_ENABLE_VULKAN=OFF -DJIUI_ENABLE_OPENGL=OFF
+      - name: Build
+        run: cmake --build build -- -j$(nproc)
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
+
+  build-linux-no-platform:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential gcc
+      - name: Configure (no platform backends)
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DJIUI_ENABLE_X11=OFF -DJIUI_ENABLE_WAYLAND=OFF -DJIUI_ENABLE_VULKAN=OFF -DJIUI_ENABLE_OPENGL=OFF
+      - name: Build
+        run: cmake --build build -- -j$(nproc)
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
+
+  build-macos:
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DJIUI_ENABLE_VULKAN=OFF -DJIUI_ENABLE_OPENGL=OFF -DJIUI_ENABLE_X11=OFF -DJIUI_ENABLE_WAYLAND=OFF
+      - name: Build
+        run: cmake --build build -- -j$(sysctl -n hw.ncpu)
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
+
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DJIUI_ENABLE_VULKAN=OFF -DJIUI_ENABLE_OPENGL=OFF -DJIUI_ENABLE_X11=OFF -DJIUI_ENABLE_WAYLAND=OFF
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test
+        working-directory: build
+        run: ctest -C Release --output-on-failure
+
+  coverage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake gcc gcovr libx11-dev libwayland-dev
+      - name: Configure with coverage
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="--coverage" -DCMAKE_EXE_LINKER_FLAGS="--coverage" -DJIUI_ENABLE_X11=ON -DJIUI_ENABLE_WAYLAND=ON -DJIUI_ENABLE_VULKAN=OFF -DJIUI_ENABLE_OPENGL=OFF
+      - name: Build
+        run: cmake --build build -- -j$(nproc)
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
+      - name: Generate coverage
+        run: gcovr --xml -o coverage.xml -r .
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml

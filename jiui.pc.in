@@ -1,0 +1,21 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: JiUI
+Description: Declarative UI Framework for C/C++ with .ji file support
+Version: @PROJECT_VERSION@
+URL: https://github.com/Ali-A-2026/JiUI
+License: LGPL-3.0-or-later
+
+# Static library consumers link with -ljiui_static instead
+Libs: -L${libdir} -ljiui
+Libs.private: @JIUI_PC_PRIVATE_LIBS@
+Cflags: -I${includedir}
+
+# When built with platform backends, consumers need these private deps:
+# X11:   -lX11
+# OpenGL: -lGL
+# Wayland: -lwayland-client -lwayland-egl
+# Threads: -lpthread
